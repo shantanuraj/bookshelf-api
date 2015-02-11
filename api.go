@@ -3,6 +3,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/unrolled/render"
+
+	_ "github.com/lib/pq"
 )
 
 //Constants for Condition field in book details.
@@ -30,15 +33,17 @@ type Book struct {
 	Price     uint16
 }
 
-//Render object to render data in JSON format.
 var (
+	//Render object to render data in JSON format.
 	ren = render.New()
+	//Databse instance
+	db = SetupDB()
 )
 
 //Connect to Postgres instance
 func SetupDB() *sql.DB {
-	db, err := sql.Open("postgres", "dbname=bookshop sslmode=disable")
-	Panicif(err)
+	db, err := sql.Open("postgres", "dbname=bookshelf sslmode=disable")
+	PanicIf(err)
 	return db
 }
 
@@ -85,9 +90,9 @@ func saveToDb(book *Book, w http.ResponseWriter) {
 							books (title, author, image, condition, price)
 							values ($1, $2, $3, $4, $5)`,
 		book.Title, book.Author, book.Image, book.Condition, book.Price)
-	Panicif(err)
+	PanicIf(err)
 	defer rows.Close()
-	fmt.Fprintf("Saved to database: %v", book)
+	fmt.Fprintf(w, "Saved to database: %v", book)
 }
 
 //Match routes to their handlers and return a mux.Router object.
@@ -100,7 +105,7 @@ func getRoutes() *mux.Router {
 
 func main() {
 	n := negroni.Classic()
+	defer db.Close()
 	n.UseHandler(getRoutes())
-
 	n.Run(":3000")
 }

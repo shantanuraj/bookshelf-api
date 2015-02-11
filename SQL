@@ -1,0 +1,10 @@
+CREATE TABLE books (
+                 id serial,
+                 title varchar(200) not null,
+                 author varchar(60) not null,
+                 image varchar(200) not null,
+                 condition int4 not null,
+                 price integer not null,
+
+                 PRIMARY KEY  (id)
+            );

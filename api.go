@@ -61,7 +61,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	response["message"] = "Bookshelf API"
 	response["/"] = "[GET] This message."
 	response["/books"] = "[GET] List of books available."
-	response["/new"] = "[POST] Add new book details."
+	response["/book"] = "[POST] Add new book details."
 	response["/book/:id"] = "[GET] Book info for corresponding id."
 	response["/buy/:id"] = "[POST] Buy book if allowed"
 
@@ -69,10 +69,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 //Add new book to database.
-func newHandler(w http.ResponseWriter, r *http.Request) {
+func newBookHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	PanicIf(err)
 
+	//Extract book object from POST request.
 	book := new(Book)
 	decoder := schema.NewDecoder()
 	err = decoder.Decode(book, r.PostForm)
@@ -95,11 +96,34 @@ func saveToDb(book *Book, w http.ResponseWriter) {
 	fmt.Fprintf(w, "Saved to database: %v", book)
 }
 
+//Get book corresponding to a unique id.
+func getBookByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	rows, err := db.Query(`select title, author, image, condition, price
+							from books where id = $1`, id)
+
+	PanicIf(err)
+	defer rows.Close()
+
+	book := Book{}
+	if rows.Next() {
+		PanicIf(rows.Err())
+		err := rows.Scan(&book.Title, &book.Author, &book.Image, &book.Condition, &book.Price)
+		PanicIf(err)
+		fmt.Fprintf(w, "Got: %v\n", book)
+	} else {
+		fmt.Fprintf(w, "Got: None")
+	}
+}
+
 //Match routes to their handlers and return a mux.Router object.
 func getRoutes() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/", rootHandler)
-	router.HandleFunc("/new", newHandler).Methods("POST")
+	router.HandleFunc("/book", newBookHandler).Methods("POST")
+	router.HandleFunc("/book/{id:[0-9]+}", getBookByIdHandler)
 	return router
 }
 

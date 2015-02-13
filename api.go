@@ -118,10 +118,31 @@ func getBookByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query(`select title, author, image, condition, price
+							from books`)
+
+	PanicIf(err)
+	defer rows.Close()
+
+	books := []Book{}
+	for rows.Next() {
+		PanicIf(rows.Err())
+		book := Book{}
+		err := rows.Scan(&book.Title, &book.Author, &book.Image, &book.Condition, &book.Price)
+		PanicIf(err)
+		books = append(books, book)
+	}
+
+	fmt.Fprintf(w, "Books\n%v\n", books)
+
+}
+
 //Match routes to their handlers and return a mux.Router object.
 func getRoutes() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/", rootHandler)
+	router.HandleFunc("/books", getAllBooksHandler)
 	router.HandleFunc("/book", newBookHandler).Methods("POST")
 	router.HandleFunc("/book/{id:[0-9]+}", getBookByIdHandler)
 	return router

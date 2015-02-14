@@ -40,14 +40,14 @@ var (
 	db = SetupDB()
 )
 
-//Connect to Postgres instance
+//SetupDB Connect to Postgres instance
 func SetupDB() *sql.DB {
 	db, err := sql.Open("postgres", "dbname=bookshelf sslmode=disable")
 	PanicIf(err)
 	return db
 }
 
-//Panic if err is not nil.
+//PanicIf Panic if err is not nil.
 func PanicIf(err error) {
 	if err != nil {
 		panic(err)
@@ -97,7 +97,7 @@ func saveToDb(book *Book, w http.ResponseWriter) {
 }
 
 //Get book corresponding to a unique id.
-func getBookByIdHandler(w http.ResponseWriter, r *http.Request) {
+func getBookByIDHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -112,9 +112,9 @@ func getBookByIdHandler(w http.ResponseWriter, r *http.Request) {
 		PanicIf(rows.Err())
 		err := rows.Scan(&book.Title, &book.Author, &book.Image, &book.Condition, &book.Price)
 		PanicIf(err)
-		fmt.Fprintf(w, "Got: %v\n", book)
+		ren.JSON(w, http.StatusOK, book)
 	} else {
-		fmt.Fprintf(w, "Got: None")
+		ren.JSON(w, http.StatusBadRequest, map[string]string{"Book": "None"})
 	}
 }
 
@@ -134,8 +134,7 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 		books = append(books, book)
 	}
 
-	fmt.Fprintf(w, "Books\n%v\n", books)
-
+	ren.JSON(w, http.StatusOK, books)
 }
 
 //Match routes to their handlers and return a mux.Router object.
@@ -144,7 +143,7 @@ func getRoutes() *mux.Router {
 	router.HandleFunc("/", rootHandler)
 	router.HandleFunc("/books", getAllBooksHandler)
 	router.HandleFunc("/book", newBookHandler).Methods("POST")
-	router.HandleFunc("/book/{id:[0-9]+}", getBookByIdHandler)
+	router.HandleFunc("/book/{id:[0-9]+}", getBookByIDHandler)
 	return router
 }
 

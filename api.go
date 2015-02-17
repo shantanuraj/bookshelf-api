@@ -151,5 +151,5 @@ func main() {
 	n := negroni.Classic()
 	defer db.Close()
 	n.UseHandler(getRoutes())
-	n.Run(":3000")
+	n.Run(":8000")
 }
